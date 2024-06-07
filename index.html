@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft mit Three.js</title>
+  <title>Minecraft mit Three.js und Pointer Lock</title>
   <style>
-    body { margin: 0; }
+    body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
 <body>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/PointerLockControls.js"></script>
   <script>
     // Szene, Kamera und Renderer
     const scene = new THREE.Scene();
@@ -19,8 +19,13 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Kamera-Position
-    camera.position.set(0, 5, 10);
+    // PointerLockControls
+    const controls = new THREE.PointerLockControls(camera, document.body);
+    scene.add(controls.getObject());
+
+    // Bewegungsgeschwindigkeit und -richtung
+    const moveSpeed = 0.1;
+    const moveDirection = { forward: false, backward: false, left: false, right: false };
 
     // Lichtquelle
     const light = new THREE.PointLight(0xffffff, 1);
@@ -51,12 +56,57 @@
       blocks.remove(block);
     }
 
+    // Pointer Lock aktivieren
+    document.addEventListener('click', () => {
+      controls.lock();
+    });
+
+    // Tastatureingaben behandeln
+    function onKeyDown(event) {
+      switch (event.code) {
+        case 'ArrowUp':
+        case 'KeyW':
+          moveDirection.forward = true;
+          break;
+        case 'ArrowDown':
+        case 'KeyS':
+          moveDirection.backward = true;
+          break;
+        case 'ArrowLeft':
+        case 'KeyA':
+          moveDirection.left = true;
+          break;
+        case 'ArrowRight':
+        case 'KeyD':
+          moveDirection.right = true;
+          break;
+      }
+    }
+
+    function onKeyUp(event) {
+      switch (event.code) {
+        case 'ArrowUp':
+        case 'KeyW':
+          moveDirection.forward = false;
+          break;
+        case 'ArrowDown':
+        case 'KeyS':
+          moveDirection.backward = false;
+          break;
+        case 'ArrowLeft':
+        case 'KeyA':
+          moveDirection.left = false;
+          break;
+        case 'ArrowRight':
+        case 'KeyD':
+          moveDirection.right = false;
+          break;
+      }
+    }
+
     // Ereignis: Block hinzufügen oder entfernen
     function onMouseClick(event) {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      
-      raycaster.setFromCamera(mouse, camera);
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera);
       const intersects = raycaster.intersectObjects(blocks.children);
 
       if (intersects.length > 0) {
@@ -65,20 +115,29 @@
         removeBlock(intersect.object);
       } else {
         // Block hinzufügen
-        const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
-        const dir = vector.sub(camera.position).normalize();
-        const distance = -camera.position.z / dir.z;
-        const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-        addBlock(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
+        const vector = new THREE.Vector3();
+        raycaster.ray.at(5, vector);  // Set distance from camera
+        vector.add(controls.getObject().position);
+        addBlock(Math.round(vector.x), Math.round(vector.y), Math.round(vector.z));
       }
     }
 
-    // Event Listener für Mausklick
+    // Event Listener
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
     window.addEventListener('click', onMouseClick);
 
     // Animationsschleife
     function animate() {
       requestAnimationFrame(animate);
+
+      if (controls.isLocked) {
+        if (moveDirection.forward) controls.moveForward(moveSpeed);
+        if (moveDirection.backward) controls.moveForward(-moveSpeed);
+        if (moveDirection.left) controls.moveRight(-moveSpeed);
+        if (moveDirection.right) controls.moveRight(moveSpeed);
+      }
+
       renderer.render(scene, camera);
     }
 
