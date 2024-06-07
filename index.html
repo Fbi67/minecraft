@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minecraft mit Three.js</title>
+  <style>
+    body { margin: 0; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Szene, Kamera und Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Kamera-Position
+    camera.position.set(0, 5, 10);
+
+    // Lichtquelle
+    const light = new THREE.PointLight(0xffffff, 1);
+    light.position.set(10, 10, 10);
+    scene.add(light);
+
+    // Block-Material
+    const blockMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+
+    // Erstelle eine Gruppe für Blöcke
+    const blocks = new THREE.Group();
+    scene.add(blocks);
+
+    // Raycaster und Maus
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Block einfügen
+    function addBlock(x, y, z) {
+      const geometry = new THREE.BoxGeometry();
+      const block = new THREE.Mesh(geometry, blockMaterial);
+      block.position.set(x, y, z);
+      blocks.add(block);
+    }
+
+    // Block löschen
+    function removeBlock(block) {
+      blocks.remove(block);
+    }
+
+    // Ereignis: Block hinzufügen oder entfernen
+    function onMouseClick(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(blocks.children);
+
+      if (intersects.length > 0) {
+        // Block löschen
+        const intersect = intersects[0];
+        removeBlock(intersect.object);
+      } else {
+        // Block hinzufügen
+        const vector = new THREE.Vector3(mouse.x, mouse.y, 0.5).unproject(camera);
+        const dir = vector.sub(camera.position).normalize();
+        const distance = -camera.position.z / dir.z;
+        const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+        addBlock(Math.round(pos.x), Math.round(pos.y), Math.round(pos.z));
+      }
+    }
+
+    // Event Listener für Mausklick
+    window.addEventListener('click', onMouseClick);
+
+    // Animationsschleife
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
