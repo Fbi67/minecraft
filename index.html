@@ -20,8 +20,13 @@
     document.body.appendChild(renderer.domElement);
 
     // PointerLockControls
-    const controls = new THREE.PointerLockControls(camera, document.body);
-    scene.add(controls.getObject());
+    let controls;
+    const loader = new THREE.FileLoader();
+    loader.load('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/PointerLockControls.js', (data) => {
+      eval(data);
+      controls = new THREE.PointerLockControls(camera, document.body);
+      scene.add(controls.getObject());
+    });
 
     // Lichtquelle
     const light = new THREE.PointLight(0xffffff, 1);
@@ -129,7 +134,7 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      if (controls.isLocked) {
+      if (controls && controls.isLocked) {
         const delta = 0.01;
         const speed = 0.5;
 
