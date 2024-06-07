@@ -59,7 +59,9 @@
 
     // Pointer Lock aktivieren
     document.addEventListener('click', () => {
-      controls.lock();
+      if (controls) {
+        controls.lock();
+      }
     });
 
     // Tastatureingaben behandeln
